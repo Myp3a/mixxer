@@ -49,6 +49,5 @@ matcher.match(to_playlist=False)
 ```
 
 # TODO
- - Search for multiple results, not for the best one
  - Better UI
  - Better usage instructions

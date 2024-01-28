@@ -21,16 +21,20 @@ class Matcher:
                     break
             if not found:
                 _log.info(f"{from_song.name} - {from_song.artist} ({from_song.album}) not found, searching...")
-                best = self.to_service.search(f"{from_song.name} - {from_song.artist}")
-                if best is None:
+                results = self.to_service.search(f"{from_song.name} - {from_song.artist}")
+                if results is None:
                     _log.warning(f"Not found.")
                     continue
-                if best.match_lax(from_song):
-                    if to_playlist:
-                        self.to_service.add_to_playlist(f"{from_song.name} - {from_song.artist}")
-                        _log.info("Found, adding to playlist.")
-                    else:
-                        self.to_service.add_to_library(f"{from_song.name} - {from_song.artist}")
-                        _log.info("Found, adding to library.")
-                else:
-                    _log.warning(f"Not found. Closest match: {best.name} - {best.artist} ({best.album})")
+                in_search = False
+                for result in results:
+                    if result.match_lax(from_song):
+                        if to_playlist:
+                            self.to_service.add_to_playlist(result)
+                            _log.info("Found, adding to playlist.")
+                            break
+                        else:
+                            self.to_service.add_to_library(result)
+                            _log.info("Found, adding to library.")
+                            break
+                if not in_search:
+                    _log.warning(f"Not found. Closest match: {results[0].name} - {results[0].artist} ({results[0].album})")

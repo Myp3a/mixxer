@@ -10,6 +10,7 @@ class Song:
     artist: str
     album: str
     isrc: str | None
+    original_object: object
 
     def clean(self, string) -> str:
         lower = string.lower()

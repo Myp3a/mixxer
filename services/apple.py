@@ -1,6 +1,6 @@
-import json
 import logging
 import pathlib
+import pickle
 import time
 
 from dataclasses import asdict
@@ -22,19 +22,19 @@ class AppleLibrary(Service):
         if cache:
             if not pathlib.Path("./cache").exists():
                 pathlib.Path("./cache").mkdir()
-            caches = pathlib.Path("./cache").glob("apple_cache_*.json")
+            caches = pathlib.Path("./cache").glob("apple_cache_*.pkl")
             currtime = time.time()
             for cache in caches:
-                cache_time = int(cache.name.split("_")[2].replace(".json", ""))
+                cache_time = int(cache.name.split("_")[2].replace(".pkl", ""))
                 if cache_time < currtime - 3600:
                     refresh = True
                 else:
                     _log.info(f"Using cached songs at {cache_time}")
-                    with open(cache.absolute(), 'r', encoding="utf-8") as inf:
-                        return [Song(**js) for js in json.loads(inf.readline())]
+                    with open(cache.absolute(), 'rb') as inf:
+                        return pickle.loads(inf.read())
             if refresh:
                 _log.info("All caches are older than one hour, refreshing")
-                caches = pathlib.Path("./cache").glob("apple_cache_*.json")
+                caches = pathlib.Path("./cache").glob("apple_cache_*.pkl")
                 for cache in caches:
                     cache.unlink()
         _log.info("Requesting Apple for library")
@@ -46,26 +46,18 @@ class AppleLibrary(Service):
             except applemusic.AppleMusicAPIException:
                 catalog_song = None
             if catalog_song is not None:
-                cmp_song = Song(catalog_song.name, catalog_song.artist_name, catalog_song.album_name, catalog_song.isrc)
+                cmp_song = Song(catalog_song.name, catalog_song.artist_name, catalog_song.album_name, catalog_song.isrc, catalog_song)
             else:
-                cmp_song = Song(song.name, song.artist_name, song.album_name, None)
+                cmp_song = Song(song.name, song.artist_name, song.album_name, None, song)
             result.append(cmp_song)
-        with open(pathlib.Path(f"./cache/apple_cache_{round(time.time())}.json").absolute(), "w", encoding="utf-8") as outf:
-            outf.write(json.dumps([asdict(song) for song in result]))
+        with open(pathlib.Path(f"./cache/apple_cache_{round(time.time())}.pkl").absolute(), "wb") as outf:
+            outf.write(pickle.dumps(result))
         return result
     
-    def add_to_library(self, query) -> bool:
-        search = self.client.catalog.search(query, applemusic.models.meta.CatalogTypes.Songs)
-        if search == []:
-            return False
-        best = search[0]
-        return self.client.library.add(best)
+    def add_to_library(self, song: Song) -> bool:
+        return self.client.library.add(song.original_object)
 
-    def add_to_playlist(self, query, playlist_name="mixxer") -> bool:
-        search = self.client.catalog.search(query, applemusic.models.meta.CatalogTypes.Songs)
-        if search == []:
-            return False
-        best = search[0]
+    def add_to_playlist(self, song: Song, playlist_name="mixxer") -> bool:
         target_playlist = None
         playlists = self.client.playlist.list_playlists()
         for playlist in playlists:
@@ -74,11 +66,13 @@ class AppleLibrary(Service):
                 break
         if target_playlist is None:
             target_playlist = self.client.playlist.create_playlist("mixxer")
-        return target_playlist.add_songs([best])
+        return target_playlist.add_songs([song.original_object])
 
     def search(self, query) -> Song | None:
         search = self.client.catalog.search(query, applemusic.models.meta.CatalogTypes.Songs)
         if search == []:
             return None
-        best = search[0]
-        return Song(best.name, best.artist_name, best.album_name, best.isrc)
+        results = []
+        for result in search:
+            results.append(Song(result.name, result.artist_name, result.album_name, result.isrc, result))
+        return results
