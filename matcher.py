@@ -31,10 +31,12 @@ class Matcher:
                         if to_playlist:
                             self.to_service.add_to_playlist(result)
                             _log.info("Found, adding to playlist.")
+                            in_search = True
                             break
                         else:
                             self.to_service.add_to_library(result)
                             _log.info("Found, adding to library.")
+                            in_search = True
                             break
                 if not in_search:
                     _log.warning(f"Not found. Closest match: {results[0].name} - {results[0].artist} ({results[0].album})")
