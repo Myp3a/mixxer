@@ -77,5 +77,12 @@ class SpotifyLibrary(Service):
             return None
         results = []
         for song in search:
-            results.append(Song(song["name"], song["artists"][0]["name"], song["album"]["name"], song["external_ids"]["isrc"], song))
+            name = song["name"]
+            artist = song["artists"][0]["name"]
+            album = song["album"]["name"]
+            try:
+                isrc = song["external_ids"]["isrc"]
+            except:
+                isrc = None
+            results.append(Song(name, artist, album, isrc, song))
         return results
