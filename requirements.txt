@@ -1,0 +1,4 @@
+applemusic @ git+https://github.com/Myp3a/apple-music-api.git@249dedf50aed1a7a82c35cdd216984aae106ae9b
+spotipy==2.23.0
+transliterate==1.10.2
+yandex-music==2.2.0
