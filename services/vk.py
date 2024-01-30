@@ -1,8 +1,8 @@
-from functools import wraps
 import logging
 import pathlib
 import pickle
 import time
+from functools import wraps
 
 import requests
 
@@ -15,7 +15,12 @@ _log = logging.getLogger(__name__)
 class Session:
     def __init__(self) -> None:
         self.session = requests.Session()
-        self.session.headers = {"User-Agent": "KateMobileAndroid/110.2 lite-553 (Android 13; SDK 33; arm64-v8a; Xiaomi M2102K1G; en)"}
+        self.session.headers = {
+            "User-Agent": (
+                "KateMobileAndroid/110.2 lite-553 (Android 13; SDK 33; arm64-v8a; Xiaomi"
+                " M2102K1G; en)"
+            )
+        }
 
     def _request(self, func, *args, **kwargs) -> requests.Response:
         done = False
@@ -63,7 +68,7 @@ class VKLibrary(Service):
                     refresh = True
                 else:
                     _log.info(f"Using cached songs at {cache_time}")
-                    with open(cache.absolute(), 'rb') as inf:
+                    with open(cache.absolute(), "rb") as inf:
                         return pickle.loads(inf.read())
             if refresh:
                 _log.info("All caches are older than one hour, refreshing")
@@ -75,14 +80,15 @@ class VKLibrary(Service):
         done = False
         offset = 0
         while not done:
-            with self.session.get("https://api.vk.com/method/audio.get",
+            with self.session.get(
+                "https://api.vk.com/method/audio.get",
                 params={
                     "access_token": self.access_token,
                     "owner_id": self.owner_id,
                     "v": "5.141",
                     "count": 200,
-                    "offset": offset
-                }
+                    "offset": offset,
+                },
             ) as resp:
                 js = resp.json()
                 songs = js["response"]["items"]
@@ -92,31 +98,37 @@ class VKLibrary(Service):
                 if js["response"]["count"] < offset:
                     break
                 offset += 200
-        with open(pathlib.Path(f"./cache/vk_cache_{round(time.time())}.pkl").absolute(), "wb") as outf:
+        with open(
+            pathlib.Path(f"./cache/vk_cache_{round(time.time())}.pkl").absolute(), "wb"
+        ) as outf:
             outf.write(pickle.dumps(result))
         return result
-    
+
     def add_to_library(self, song: Song) -> bool:
-        with self.session.get("https://api.vk.com/method/audio.add",
+        with self.session.get(
+            "https://api.vk.com/method/audio.add",
             params={
                 "access_token": self.access_token,
                 "access_key": song.original_object["access_key"],
                 "owner_id": song.original_object["owner_id"],
                 "audio_id": song.original_object["id"],
-                "v": "5.141"
-            }, timeout=30
+                "v": "5.141",
+            },
+            timeout=30,
         ) as resp:
             return resp.json()["response"] == song.original_object["id"]
 
     def add_to_playlist(self, song: Song, playlist_name="mixxer") -> bool:
         target_playlist = None
-        with self.session.get("https://api.vk.com/method/audio.getPlaylists",
+        with self.session.get(
+            "https://api.vk.com/method/audio.getPlaylists",
             params={
                 "access_token": self.access_token,
                 "count": 50,
                 "owner_id": self.owner_id,
-                "v": "5.141"
-            }, timeout=30
+                "v": "5.141",
+            },
+            timeout=30,
         ) as resp:
             resp = resp.json()
             playlists = resp["response"]["items"]
@@ -125,32 +137,35 @@ class VKLibrary(Service):
                 target_playlist = playlist
                 break
         if target_playlist is None:
-            self.session.get("https://api.vk.com/method/audio.createPlaylist",
-                         params={
-                             "access_token": self.access_token,
-                             "v": "5.141",
-                             "title": playlist_name,
-                             "owner_id": self.owner_id
-                         }, timeout=30)
+            self.session.get(
+                "https://api.vk.com/method/audio.createPlaylist",
+                params={
+                    "access_token": self.access_token,
+                    "v": "5.141",
+                    "title": playlist_name,
+                    "owner_id": self.owner_id,
+                },
+                timeout=30,
+            )
             return self.add_to_playlist(song, playlist_name)
-        with self.session.get("https://api.vk.com/method/audio.addToPlaylist",
-                     params={
-                         "access_token": self.access_token,
-                         "owner_id": self.owner_id,
-                         "playlist_id": target_playlist["id"],
-                         "v": "5.141",
-                         "audio_ids": f'{song.original_object["owner_id"]}_{song.original_object["id"]}'
-                     }, timeout=30) as resp:
+        with self.session.get(
+            "https://api.vk.com/method/audio.addToPlaylist",
+            params={
+                "access_token": self.access_token,
+                "owner_id": self.owner_id,
+                "playlist_id": target_playlist["id"],
+                "v": "5.141",
+                "audio_ids": f'{song.original_object["owner_id"]}_{song.original_object["id"]}',
+            },
+            timeout=30,
+        ) as resp:
             return resp.json()["response"][0]["audio_id"] == song.original_object["id"]
 
     def search(self, query) -> Song | None:
-        search = self.session.get("https://api.vk.com/method/audio.search",
-            params={
-                "access_token": self.access_token,
-                "q": query,
-                "v": "5.141",
-                "count": 30
-            }, timeout=30
+        search = self.session.get(
+            "https://api.vk.com/method/audio.search",
+            params={"access_token": self.access_token, "q": query, "v": "5.141", "count": 30},
+            timeout=30,
         )
         search = search.json()
         if search["response"]["items"] == []:

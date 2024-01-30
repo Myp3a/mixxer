@@ -3,8 +3,6 @@ import pathlib
 import pickle
 import time
 
-from dataclasses import asdict
-
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
@@ -16,8 +14,19 @@ _log = logging.getLogger(__name__)
 
 class SpotifyLibrary(Service):
     def __init__(self, client_id, client_secret) -> None:
-        scopes = "playlist-modify-private,playlist-read-private,user-library-modify,user-library-read"
-        self.client = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scopes, client_id=client_id, client_secret=client_secret, redirect_uri="http://localhost:1234", show_dialog=True, open_browser=False))
+        scopes = (
+            "playlist-modify-private,playlist-read-private,user-library-modify,user-library-read"
+        )
+        self.client = spotipy.Spotify(
+            auth_manager=SpotifyOAuth(
+                scope=scopes,
+                client_id=client_id,
+                client_secret=client_secret,
+                redirect_uri="http://localhost:1234",
+                show_dialog=True,
+                open_browser=False,
+            )
+        )
 
     def list_library(self, cache=True) -> list[Song]:
         refresh = False
@@ -32,7 +41,7 @@ class SpotifyLibrary(Service):
                     refresh = True
                 else:
                     _log.info(f"Using cached songs at {cache_time}")
-                    with open(cache.absolute(), 'rb') as inf:
+                    with open(cache.absolute(), "rb") as inf:
                         return pickle.loads(inf.read())
             if refresh:
                 _log.info("All caches are older than one hour, refreshing")
@@ -43,19 +52,27 @@ class SpotifyLibrary(Service):
         songs = []
         cntr = 0
         while True:
-            part_songs = self.client.current_user_saved_tracks(limit=50, offset=cntr*50)
+            part_songs = self.client.current_user_saved_tracks(limit=50, offset=cntr * 50)
             cntr += 1
             songs.extend(part_songs["items"])
             if not part_songs.get("next", False):
                 break
         result = []
         for song in songs:
-            cmp_song = Song(song["track"]["name"], song["track"]["artists"][0]["name"], song["track"]["album"]["name"], song["track"]["external_ids"]["isrc"], song["track"])
+            cmp_song = Song(
+                song["track"]["name"],
+                song["track"]["artists"][0]["name"],
+                song["track"]["album"]["name"],
+                song["track"]["external_ids"]["isrc"],
+                song["track"],
+            )
             result.append(cmp_song)
-        with open(pathlib.Path(f"./cache/spotify_cache_{round(time.time())}.pkl").absolute(), "wb") as outf:
+        with open(
+            pathlib.Path(f"./cache/spotify_cache_{round(time.time())}.pkl").absolute(), "wb"
+        ) as outf:
             outf.write(pickle.dumps(result))
         return result
-    
+
     def add_to_library(self, song: Song) -> bool:
         return self.client.current_user_saved_tracks_add([song.original_object["id"]])
 
@@ -67,8 +84,10 @@ class SpotifyLibrary(Service):
                 target_playlist = playlist
                 break
         if target_playlist is None:
-            user_id = self.client.me()['id']
-            target_playlist = self.client.user_playlist_create(user_id, name=playlist_name, public=False)
+            user_id = self.client.me()["id"]
+            target_playlist = self.client.user_playlist_create(
+                user_id, name=playlist_name, public=False
+            )
         return self.client.playlist_add_items(target_playlist["id"], [song.original_object["id"]])
 
     def search(self, query) -> Song | None:

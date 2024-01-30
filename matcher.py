@@ -1,4 +1,5 @@
 import logging
+
 from services.service import Service
 
 _log = logging.getLogger(__name__)
@@ -31,7 +32,10 @@ class Matcher:
                     found = True
                     break
             if not found:
-                _log.info(f"{from_song.name} - {from_song.artist} ({from_song.album}) not found, searching...")
+                _log.info(
+                    f"{from_song.name} - {from_song.artist} ({from_song.album}) not found,"
+                    " searching..."
+                )
                 results = self.to_service.search(f"{from_song.name} - {from_song.artist}")
                 if results is None:
                     _log.warning(f"Not found.")
@@ -61,4 +65,7 @@ class Matcher:
                             in_search = True
                             break
                 if not in_search:
-                    _log.warning(f"Not found. Closest match: {results[0].name} - {results[0].artist} ({results[0].album})")
+                    _log.warning(
+                        f"Not found. Closest match: {results[0].name} -"
+                        f" {results[0].artist} ({results[0].album})"
+                    )

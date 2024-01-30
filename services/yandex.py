@@ -4,8 +4,8 @@ import pickle
 import time
 
 import yandex_music
-from services.service import Service
 
+from services.service import Service
 from song import Song
 
 _log = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class YandexLibrary(Service):
                     refresh = True
                 else:
                     _log.info(f"Using cached songs at {cache_time}")
-                    with open(cache.absolute(), 'rb') as inf:
+                    with open(cache.absolute(), "rb") as inf:
                         return pickle.loads(inf.read())
             if refresh:
                 _log.info("All caches are older than one hour, refreshing")
@@ -46,10 +46,12 @@ class YandexLibrary(Service):
             album = song.albums[0].title
             cmp_song = Song(title, artists, album, None, song)
             result.append(cmp_song)
-        with open(pathlib.Path(f"./cache/yandex_cache_{round(time.time())}.pkl").absolute(), "wb") as outf:
+        with open(
+            pathlib.Path(f"./cache/yandex_cache_{round(time.time())}.pkl").absolute(), "wb"
+        ) as outf:
             outf.write(pickle.dumps(result))
         return result
-    
+
     def add_to_library(self, song: Song) -> bool:
         return self.client.users_likes_tracks_add(song.original_object.track_id)
 
@@ -62,8 +64,10 @@ class YandexLibrary(Service):
                 break
         if target_playlist is None:
             target_playlist = self.client.users_playlists_create(playlist_name)
-        return target_playlist.insert_track(song.original_object.track_id.split(":")[0], song.original_object.track_id.split(":")[1])
-    
+        return target_playlist.insert_track(
+            song.original_object.track_id.split(":")[0], song.original_object.track_id.split(":")[1]
+        )
+
     def search(self, query) -> Song | None:
         search = self.client.search(query, type_="track").tracks
         if search is None:

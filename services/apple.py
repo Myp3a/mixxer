@@ -3,8 +3,6 @@ import pathlib
 import pickle
 import time
 
-from dataclasses import asdict
-
 import applemusic
 
 from services.service import Service
@@ -30,7 +28,7 @@ class AppleLibrary(Service):
                     refresh = True
                 else:
                     _log.info(f"Using cached songs at {cache_time}")
-                    with open(cache.absolute(), 'rb') as inf:
+                    with open(cache.absolute(), "rb") as inf:
                         return pickle.loads(inf.read())
             if refresh:
                 _log.info("All caches are older than one hour, refreshing")
@@ -46,14 +44,22 @@ class AppleLibrary(Service):
             except applemusic.AppleMusicAPIException:
                 catalog_song = None
             if catalog_song is not None:
-                cmp_song = Song(catalog_song.name, catalog_song.artist_name, catalog_song.album_name, catalog_song.isrc, catalog_song)
+                cmp_song = Song(
+                    catalog_song.name,
+                    catalog_song.artist_name,
+                    catalog_song.album_name,
+                    catalog_song.isrc,
+                    catalog_song,
+                )
             else:
                 cmp_song = Song(song.name, song.artist_name, song.album_name, None, song)
             result.append(cmp_song)
-        with open(pathlib.Path(f"./cache/apple_cache_{round(time.time())}.pkl").absolute(), "wb") as outf:
+        with open(
+            pathlib.Path(f"./cache/apple_cache_{round(time.time())}.pkl").absolute(), "wb"
+        ) as outf:
             outf.write(pickle.dumps(result))
         return result
-    
+
     def add_to_library(self, song: Song) -> bool:
         return self.client.library.add(song.original_object)
 
@@ -74,5 +80,7 @@ class AppleLibrary(Service):
             return None
         results = []
         for result in search:
-            results.append(Song(result.name, result.artist_name, result.album_name, result.isrc, result))
+            results.append(
+                Song(result.name, result.artist_name, result.album_name, result.isrc, result)
+            )
         return results
