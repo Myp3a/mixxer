@@ -9,13 +9,24 @@ class Matcher:
         self.from_service = from_service
         self.to_service = to_service
 
-    def match(self, to_playlist=True) -> None:
+    def match(self, to_playlist=True, match_level_existing=1, match_level_new=3) -> None:
         from_songs = self.from_service.list_library()[::-1]
         to_songs = self.to_service.list_library()[::-1]
         for from_song in from_songs:
             found = False
             for to_song in to_songs:
-                if from_song.match_lax(to_song):
+                match match_level_existing:
+                    case 1:
+                        match_function = from_song.match_very_lax
+                    case 2:
+                        match_function = from_song.match_lax
+                    case 3:
+                        match_function = from_song.match_mid
+                    case 4:
+                        match_function = from_song.match_strict
+                    case 5:
+                        match_function = from_song.match_isrc
+                if match_function(to_song):
                     _log.debug(f"{from_song} matched {to_song}")
                     found = True
                     break
@@ -26,8 +37,19 @@ class Matcher:
                     _log.warning(f"Not found.")
                     continue
                 in_search = False
+                match match_level_new:
+                    case 1:
+                        match_function = from_song.match_very_lax
+                    case 2:
+                        match_function = from_song.match_lax
+                    case 3:
+                        match_function = from_song.match_mid
+                    case 4:
+                        match_function = from_song.match_strict
+                    case 5:
+                        match_function = from_song.match_isrc
                 for result in results:
-                    if result.match_lax(from_song):
+                    if match_function(result):
                         if to_playlist:
                             self.to_service.add_to_playlist(result)
                             _log.info("Found, adding to playlist.")
