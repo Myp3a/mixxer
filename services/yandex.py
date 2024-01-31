@@ -15,6 +15,11 @@ class YandexLibrary(Service):
     def __init__(self, user_token) -> None:
         self.client = yandex_music.Client(user_token).init()
 
+    def invalidate_cache(self) -> None:
+        caches = pathlib.Path("./cache").glob("yandex_cache_*.pkl")
+        for cache in caches:
+            cache.unlink()
+
     def list_library(self, cache=True) -> list[Song]:
         refresh = False
         if cache:
@@ -53,6 +58,7 @@ class YandexLibrary(Service):
         return result
 
     def add_to_library(self, song: Song) -> bool:
+        self.invalidate_cache()
         return self.client.users_likes_tracks_add(song.original_object.track_id)
 
     def add_to_playlist(self, song: Song, playlist_name="mixxer") -> bool:

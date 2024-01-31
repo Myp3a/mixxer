@@ -6,6 +6,9 @@ _log = logging.getLogger(__name__)
 
 
 class Service:
+    def invalidate_cache(self) -> None:
+        _log.error("Not implemented")
+        
     def list_library(self, cache=True) -> list[Song]:
         _log.error("Not implemented")
 

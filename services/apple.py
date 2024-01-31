@@ -15,6 +15,11 @@ class AppleLibrary(Service):
     def __init__(self, dev_token, user_token) -> None:
         self.client = applemusic.ApiClient(dev_token, user_token)
 
+    def invalidate_cache(self) -> None:
+        caches = pathlib.Path("./cache").glob("apple_cache_*.pkl")
+        for cache in caches:
+            cache.unlink()
+
     def list_library(self, cache=True) -> list[Song]:
         refresh = False
         if cache:
@@ -61,6 +66,7 @@ class AppleLibrary(Service):
         return result
 
     def add_to_library(self, song: Song) -> bool:
+        self.invalidate_cache()
         return self.client.library.add(song.original_object)
 
     def add_to_playlist(self, song: Song, playlist_name="mixxer") -> bool:

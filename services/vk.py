@@ -55,6 +55,11 @@ class VKLibrary(Service):
         self.access_token = user_token
         self.session = Session()
 
+    def invalidate_cache(self) -> None:
+        caches = pathlib.Path("./cache").glob("vk_cache_*.pkl")
+        for cache in caches:
+            cache.unlink()
+
     def list_library(self, cache=True) -> list[Song]:
         refresh = False
         if cache:
@@ -105,6 +110,7 @@ class VKLibrary(Service):
         return result
 
     def add_to_library(self, song: Song) -> bool:
+        self.invalidate_cache()
         with self.session.get(
             "https://api.vk.com/method/audio.add",
             params={
