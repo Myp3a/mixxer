@@ -73,7 +73,7 @@ class YandexLibrary(Service):
         if search is None:
             return None
         results = []
-        for item in search:
+        for item in search.results:
             title = item.title
             artists = ""
             for art in item.artists:
