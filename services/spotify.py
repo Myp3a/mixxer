@@ -68,7 +68,7 @@ class SpotifyLibrary(Service):
                 song["track"]["name"],
                 song["track"]["artists"][0]["name"],
                 song["track"]["album"]["name"],
-                song["track"]["external_ids"]["isrc"],
+                song["track"]["external_ids"].get("isrc", None),
                 song["track"],
             )
             result.append(cmp_song)
